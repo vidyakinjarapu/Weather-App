@@ -1,7 +1,13 @@
 import httpx
+from typing import Annotated
 from contextlib import asynccontextmanager  
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Query
+from schemas import WeatherResponse, describe_weather
 
+
+
+# Only one httpx client, born at startup, used by every weather request, 
+# closed cleanly at shutdown. That's lifespan in one sentence.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     #runs on startup
@@ -21,8 +27,14 @@ def root():
 def health():
     return {"status" : "ok"}
 
-@app.get("/weather")
-async def get_weather(request: Request, city: str):
+@app.get("/weather", response_model=WeatherResponse)
+async def get_weather(
+    request: Request, 
+    city: Annotated[str, Query(min_length=1, max_length=100, description="City name to look up")],
+    ):
+
+    #... -> required ellipsis
+    
     client = request.app.state.http_client
 
     # Getting the coordinates of the city -> lat, log
@@ -47,11 +59,13 @@ async def get_weather(request: Request, city: str):
     )
     weather = weather_resp.json()["current_weather"]
 
-    return {
-        "city": location["name"],
-        "country": location.get("country"),
-        "temperature_c": weather["temperature"],
-        "windspeed_kmh": weather["windspeed"],
-        "weather_code": weather["weathercode"]
-    }
+
+    return WeatherResponse(
+        city=location["name"],
+        country=location.get("country"),
+        temperature_c=weather["temperature"],
+        windspeed_kmh=weather["windspeed"],
+        weather_code=weather["weathercode"],
+        description=describe_weather(weather["weathercode"]),
+    )
 
