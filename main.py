@@ -4,6 +4,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException, Query
 from schemas import WeatherResponse, describe_weather
 
+from database import Base, engine
+import models
+
 
 
 # Only one httpx client, born at startup, used by every weather request, 
@@ -12,6 +15,9 @@ from schemas import WeatherResponse, describe_weather
 async def lifespan(app: FastAPI):
     #runs on startup
     app.state.http_client = httpx.AsyncClient(timeout=10.0)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     yield
     #runs on shutdown
     await app.state.http_client.aclose()
@@ -34,7 +40,7 @@ async def get_weather(
     ):
 
     #... -> required ellipsis
-    
+
     client = request.app.state.http_client
 
     # Getting the coordinates of the city -> lat, log
@@ -68,4 +74,3 @@ async def get_weather(
         weather_code=weather["weathercode"],
         description=describe_weather(weather["weathercode"]),
     )
-
