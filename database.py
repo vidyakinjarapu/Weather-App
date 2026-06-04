@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import (
 
 from sqlalchemy.orm import DeclarativeBase
 
-DATABASE_URL = "postgresql+syncpg://weather_user:weather_pass@localhost:5432/weather_app"
+DATABASE_URL = "postgresql+asyncpg://weather_user:weather_pass@localhost:5432/weather_app"
 
 engine = create_async_engine(DATABASE_URL, echo=True)
 
